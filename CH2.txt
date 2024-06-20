@@ -1,0 +1,362 @@
+CH2:
+
+As user:
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+kubectl version --client
+
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF
+
+sudo yum install -y kubectl
+
+kubectl create --help
+
+kubectl explain pod
+
+From the OpenShift web console, navigate to Help → Command line tools. 
+
+oc --help, oc explain, oc login
+
+oc login https://api.ocp4.example.com:6443
+
+oc new-project myapp
+
+oc cluster-info
+
+oc api-versions
+
+oc get clusteroperator
+
+oc get pod
+
+oc get all
+
+oc explain pods.spec.containers.resources
+
+oc create -f pod.yaml
+
+oc status
+
+oc delete pod quotes-ui
+
+oc get pods -n openshift-apiserver
+
+To retrieve an OAuth token by using the OpenShift web console, navigate to Help → Command line tools.
+
+On the Command Line Tools page, navigate to Copy login Command. The following page requires you to log in with your OpenShift user credentials. 
+Next, navigate to Display token. Use the command under the Log in with this token label to log in to the OpenShift API.
+
+oc login --token=TOKEN_HERE --server=https://api.ocp4.example.com:6443
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start cli-interfaces
+
+Open a web browser and then navigate to https://console-openshift-console.apps.ocp4.example.com
+
+user/pass - developer/developer 
+
+To retrieve an OAuth token by using the OpenShift web console, navigate to Help → Command line tools.
+
+On the Command Line Tools page, navigate to Copy login Command. The following page requires you to log in with your OpenShift user credentials. 
+Next, navigate to Display token. Use the command under the Log in with this token label to log in to the OpenShift API.
+
+oc login --token=TOKEN_HERE --server=https://api.ocp4.example.com:6443
+
+kubectl help
+
+kubectl create --help
+
+oc help
+
+oc create --help
+
+oc login -u admin -p redhatocp
+
+oc version
+
+oc cluster-info
+
+oc api-versions
+
+oc get clusteroperator
+
+oc get pods -n openshift-apiserver
+
+oc status -n openshift-authentication
+
+oc explain services
+
+oc get nodes
+
+lab finish cli-interfaces
+
+--------------------------------------------------------------------------------------------------------------
+
+oc api-resources
+
+oc api-resources --namespaced=true --api-group apps --sort-by name
+
+oc explain pod
+
+oc explain pod.spec
+
+oc get pods
+
+oc get pods -o wide
+
+oc get pods -o yaml
+
+oc get pods -o json
+
+oc describe TYPE NAME-PREFIX
+
+oc get pods -o yaml | yq r - 'items[0].status.podIP'
+
+oc get pods -o json | jq '.items[0].status.podIP'
+
+Custom Bullshit:
+
+oc get pods -o custom-columns=PodName:".metadata.name",ContainerName:"spec.containers[].name",Phase:"status.phase",IP:"status.podIP",Ports:"spec.containers[].ports[].containerPort"
+
+oc get pods  -o jsonpath='{range .items[]}{"Pod Name: "}{.metadata.name}{"IP: "}{.status.podIP}{"Ports: "}{.spec.containers[].ports[].containerPort}{"\n"}{end}'
+
+oc get pods  -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start cli-resources
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project cli-resources
+
+oc api-resources
+
+oc api-resources --namespaced
+
+oc api-resources --namespaced -o name | wc -l
+
+oc api-resources --namespaced=false
+
+oc api-resources --namespaced=false -o name | wc -l
+
+oc api-resources --api-group ''
+
+oc explain pods
+
+oc get pods
+
+oc describe pod myapp-54fcdcd9d7-2h5vx
+
+oc get pod myapp-54fcdcd9d7-2h5vx -o yaml
+
+oc api-resources --api-group apps
+
+oc explain deployments
+
+oc get deploy 
+
+oc get deploy myapp -o wide
+
+oc describe deployment myapp
+
+oc api-resources --api-group config.openshift.io
+
+oc explain projects
+
+oc describe project cli-resources
+
+oc get project cli-resources -o json
+
+oc get pods -n openshift-etcd -> permission problem
+
+oc login -u admin -p redhatocp
+
+oc get pods etcd-master01 -n openshift-etcd -o=jsonpath='{.spec.containers[0].image}'{"\n"}
+
+oc get pods -n openshift-etcd etcd-master01 -o json | jq .spec.containers[0].image
+
+oc get pods -n openshift-etcd etcd-master01 -o go-template='{{(index .spec.containers 0).image}}'
+
+oc get pods -n openshift-monitoring prometheus-k8s-0 -o yaml |  yq r - 'status.conditions'
+
+oc get pods -n openshift-storage -o custom-columns=PodName:".metadata.name",ContainerName:"spec.containers[].name",Phase:"status.phase",IP:"status.podIP",Ports:"spec.containers[].ports[].containerPort"
+
+lab finish cli-resources
+
+--------------------------------------------------------------------------------------------------------------
+
+oc get clusteroperators
+
+oc get clusteroperators dns -o yaml
+
+oc get operators
+
+oc get pods -n openshift-dns-operator
+
+oc get pod -n openshift-dns-operator dns-operator-64688bfdd4-8zklh -o json | jq .status
+
+oc get pods -n openshift-etcd --show-labels
+
+oc adm top pods -A --sum
+
+oc adm top pods etcd-master01 -n openshift-etcd --containers
+
+Visit webpage:
+
+Home → Overview. The Overview page displays a collection of cluster-wide metrics, and provides a high-level view of the overall health of the cluster.
+
+The PROJECT DETAILS page displays metrics that provide an overview of the resources that are used within the scope of a specific project. 
+The UTILIZATION section displays usage information about resources, such as CPU and memory, along with the ability to display the top consumers for each resource.
+
+If a resource quota is created for the project, then the current project request and limits appear on the Project Details page.
+
+Pod Details page displays time-series graphs of the CPU, memory, and file system usage for a specific pod. 
+
+Observe → Metrics, enter a Prometheus Query Language expression in the text field, and click Run Queries. The results of the query are displayed as a time-series graph.
+
+CLI:
+
+oc get events -n openshift-kube-controller-manager
+
+oc describe pod mysql
+
+oc get all -n openshift-monitoring --show-kind
+
+oc logs alertmanager-main-0 -n openshift-monitoring
+
+oc cluster-info
+
+oc get nodes
+
+oc get node master01 -o jsonpath=*'{"Allocatable:\n"}{.status.allocatable}{"\n\n"}{"Capacity:\n"}{.status.capacity}{"\n"}'
+
+oc get node master01 -o json | jq '.status.conditions'
+
+oc get node master01 -o json | jq '{conditions: .status.conditions, capacity: .status.capacity, allocatable: .status.allocatable}'
+
+oc adm node-logs --help
+
+oc adm node-logs --role master
+
+oc adm node-logs -u kubelet
+
+oc adm node-logs --path=cron
+
+oc adm node-logs --tail 1
+
+oc adm node-logs master01 -u crio --tail 1
+
+oc debug node/node-name -> oc debug node/master01
+
+chroot /host
+
+for SERVICES in kubelet crio; do echo ---- $SERVICES ---- ; systemctl is-active $SERVICES ;  echo ""; done
+
+systemctl status kubelet
+
+oc logs pod-name -c container-name
+
+oc debug
+
+oc debug job/test --as-user=1000000
+
+oc debug node/master01
+
+oc adm must-gather --dest-dir /home/student/must-gather
+
+tar cvaf mustgather.tar must-gather/
+
+oc adm inspect clusteroperator/openshift-apiserver clusteroperator/kube-apiserver
+
+oc adm inspect clusteroperator/openshift-apiserver --since 10m
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start cli-health
+
+oc get operators
+
+oc get clusteroperators
+
+oc describe clusteroperators openshift-apiserver
+
+oc get clusteroperators openshift-apiserver -o json | jq '{apiVersion: .apiVersion, uid: .metadata.uid, conditions: .status.conditions, versions: .status.versions}'
+
+oc get pods -n openshift-apiserver-operator
+
+oc get pod -n openshift-apiserver-operator openshift-apiserver-operator-7ddc8958fb-7m2kr -o json | jq .status
+
+oc adm top pods -A --sum
+
+oc adm top pods -A --sum | sort -k3 -nr -> sort by top CPU
+oc adm top pods -A --sum | sort -k4 -nr -> sort by top MEM
+
+oc get pods -n openshift-etcd --show-labels
+
+oc adm top pods etcd-master01 -n openshift-etcd --containers
+
+oc get all -n openshift-monitoring --show-kind
+
+oc logs alertmanager-main-0 -n openshift-monitoring
+
+oc get events -n openshift-kube-controller-manager
+
+oc get nodes
+
+oc adm top node
+
+oc get node master01 -o jsonpath='Allocatable: {.status.allocatable.cpu}{"\n"}''Capacity: {.status.capacity.cpu}{"\n"}'
+
+oc describe node master01
+
+oc adm node-logs master01 -u crio --tail 1
+
+oc adm node-logs master01 -u kubelet --tail 2
+
+oc debug node/master01
+
+systemctl status kubelet
+
+ctrl+c
+
+systemctl is-active crio
+
+ctrl+d
+
+oc adm must-gather --dest-dir /home/student/must-gather
+
+ls ~/must-gather
+
+tail -5 ~/must-gather/quay-io.../host_service_logs/masters/kubelet_service.log
+
+oc adm inspect clusteroperator/openshift-apiserver --dest-dir /home/student/inspect --since 5m
+
+ls inspect/
+
+cat ~/inspect/cluster-scoped-resources/operator.openshift.io/openshiftapiservers/cluster.yaml
+
+rm -rf must-gather inspect
+
+lab finish cli-health
+
+--------------------------------------------------------------------------------------------------------------
+
+https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch02s07/afc13612-c35a-47ee-be67-d71e1f05fb37
+
+--------------------------------------------------------------------------------------------------------------

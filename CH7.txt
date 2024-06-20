@@ -1,0 +1,355 @@
+CH7
+
+Multiple tags can refer to the same image version. The following screen capture of the Red Hat Ecosystem Catalog at https://catalog.redhat.com/software/containers/explore lists the tags for the ubi9/nginx-120 image:
+
+In this case, the 1.86, latest, and 1 tags point to the same image version. You can use any of these tags to refer to that version.
+
+The latest and 1 tags are floating tags, because they can point to different image versions over time. For example, when developers publish a new version of the image, they change the latest tag to point to that new version. They also update the 1 tag to point to the latest release of that version, such as 1-87 or 1-88.
+
+As a user of the image, by specifying a floating tag, you ensure that you always consume the up-to-date image version that corresponds to the tag.
+
+To refer to an image by its SHA ID, replace name:tag with name@SHA-ID in the image name. The following example uses the SHA image ID instead of a tag.
+
+registry.access.redhat.com/ubi9/nginx-120@sha256:1be2006abd21735e7684eb4cc6eb62...
+
+oc image info registry.access.redhat.com/ubi9/nginx-120:1-86
+
+oc image info --filter-by-os linux/amd64 registry.access.redhat.com/ubi9/nginx-120:1-86
+
+oc debug node/node-name
+
+oc get deployment myapp -o yaml
+
+The imagePullPolicy attribute can take the following values:
+
+IfNotPresent
+If the image is already on the compute node, because another container is using it or because OpenShift pulled the image during a preceding pod run, then OpenShift uses that local image.
+OpenShift sets the imagePullPolicy attribute to IfNotPresent by default when you use a tag or the SHA ID to identify the image.
+
+Always
+OpenShift always verifies whether an updated version of the image is available on the source container registry. 
+OpenShift sets the imagePullPolicy attribute to Always by default when you use the latest tag, or when you do not specify a tag.
+
+Never
+OpenShift does not pull the image, and expects the image to be already available on the node. Otherwise, the deployment fails.
+
+oc debug node/node-name
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start updates-ids
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project updates-ids
+
+oc image info registry.ocp4.example.com:8443/ubi8/httpd-24:1-209
+
+oc image info registry.ocp4.example.com:8443/ubi8/httpd-24:1-215
+
+skopeo login registry.ocp4.example.com:8443 -u developer
+Password: developer
+
+skopeo inspect docker://registry.ocp4.example.com:8443/ubi8/httpd-24:1-215
+
+oc create deployment httpd1 --image registry.ocp4.example.com:8443/ubi8/httpd-24:1-209
+
+oc get pods -o wide
+
+oc get deployment httpd1 -o wide
+
+oc login -u admin -p redhatocp
+
+oc debug node/master01
+
+chroot /host
+
+ps --name httpd-24 -o yaml
+
+crictl images
+
+crictl images --digests 8ee59251acc93
+
+exit
+
+exit
+
+exit
+
+oc login -u developer -p developer
+
+oc image info registry.ocp4.example.com:8443/ubi8/httpd-24:1-209 -o json | jq -r .digest
+
+IMAGE=sha256:b1e3...f876
+
+oc create deployment httpd2 --image registry.ocp4.example.com:8443/ubi8/httpd-24@$IMAGE
+
+oc get deployment httpd2 -o wide
+
+oc set image deployment/httpd2 httpd-24=registry.ocp4.example.com:8443/ubi8/httpd-24:1-215
+
+oc get deployment httpd2 -o wide
+
+oc get pods
+
+oc get pod httpd2-998d9b9b9-5859j -o jsonpath='{.spec.containers[0].image}{"\n"}'
+
+skopeo login -u developer -p developer registry.ocp4.example.com:8443
+
+skopeo copy docker://registry.ocp4.example.com:8443/ubi8/httpd-24:1-209 docker://registry.ocp4.example.com:8443/ubi8/httpd-24:latest
+
+oc image info registry.ocp4.example.com:8443/ubi8/httpd-24:1-209
+
+oc image info registry.ocp4.example.com:8443/ubi8/httpd-24:latest
+
+oc create deployment httpd3 --image registry.ocp4.example.com:8443/ubi8/httpd-24
+
+oc get pods
+
+oc describe pod httpd3-85b978d758-fvqdr
+
+skopeo copy docker://registry.ocp4.example.com:8443/ubi8/httpd-24:1-215 docker://registry.ocp4.example.com:8443/ubi8/httpd-24:latest
+
+skopeo logout registry.ocp4.example.com:8443
+
+oc describe pod httpd3-85b978d758-fvqdr
+
+oc scale deployment/httpd3 --replicas 2
+
+oc get pods
+
+oc describe pod httpd3-85b978d758-fvqdr
+
+oc describe pod httpd3-85b978d758-f98jh
+
+lab finish updates-ids
+
+--------------------------------------------------------------------------------------------------------------
+
+oc rollout pause deployment/myapp
+
+oc set image deployment/myapp nginx-120=registry.access.redhat.com/ubi9/nginx-120:1-86
+
+oc set env deployment/myapp NGINX_LOG_TO_VOLUME=1
+
+oc set probe deployment/myapp --readiness --get-url http://:8080
+
+oc rollout resume deployment/myapp
+
+oc create deployment myapp2 --image registry.access.redhat.com/ubi9/nginx-120:1-86 --replicas 0
+
+oc set probe deployment/myapp2 --readiness --get-url http://:8080
+
+oc scale deployment/myapp2 --replicas 10
+
+oc get deployment/myapp2
+
+oc get replicaset
+
+oc rollout undo deployment/myapp2
+
+oc rollout status deployment/myapp2
+
+oc rollout history deployment/myapp2
+
+oc annotate deployment/myapp2 kubernetes.io/change-cause="Image updated to 1-86"
+
+oc rollout history deployment/myapp2
+
+oc rollout history deployment/myapp2 --revision 1
+
+oc rollout undo deployment/myapp2 --to-revision 1
+
+lab start updates-rollout
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project updates-rollout-db
+
+oc get deployment -o wide
+
+oc get pod
+
+oc get pod mydb-5c79866d48-5xzkk -o jsonpath='{.spec.containers[0].image}{"\n"}'
+
+oc rsh mydb-5c79866d48-5xzkk mysql --user=operator1 --password=test -e "SHOW DATABASES"
+
+oc rollout pause deployment/mydb
+
+oc set env deployment/mydb MYSQL_PASSWORD=redhat123
+
+oc rsh mydb-5c79866d48-5xzkk mysql --user=operator1 --password=test -e "SHOW DATABASES"
+
+oc set image deployment/mydb mysql-80=registry.ocp4.example.com:8443/rhel9/mysql-80:1-228
+
+oc get pod mydb-5c79866d48-5xzkk -o jsonpath='{.spec.containers[0].image}{"\n"}'
+
+oc rollout resume deployment/mydb
+
+oc get pods
+
+oc get pod mydb-dd5dcbddb-rmf85 -o jsonpath='{.spec.containers[0].image}{"\n"}'
+
+oc rsh mydb-dd5dcbddb-rmf85 mysql --user=operator1 --password=redhat123 -e "SHOW DATABASES"
+
+oc project updates-rollout-web
+
+oc get deployment -o wide
+
+oc get deployment -o wide
+
+oc get replicaset version-7bfff6b5b4 -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+
+oc get deployment version -o jsonpath='{.spec.template.spec.containers[0].readinessProbe}' | jq .
+
+/home/student/DO180/labs/updates-rollout/curl_loop.sh
+
+oc set image deployment/version versioned-hello=registry.ocp4.example.com:8443/redhattraining/versioned-hello:v1.1
+
+oc rollout status deployment/version
+
+oc get replicaset
+
+oc get replicaset version-b7fddfc8c -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+
+oc rollout undo deployment/version
+
+oc get replicaset
+
+lab finish updates-rollout
+
+--------------------------------------------------------------------------------------------------------------
+
+oc get is -n openshift -o name
+
+oc get istag -n openshift | grep php
+
+oc describe is php -n openshift
+
+oc describe is php -n openshift
+
+oc describe is php -n openshift
+
+oc create is keycloak
+
+oc create istag keycloak:20.0 --from-image quay.io/keycloak/keycloak:20.0.2
+
+oc create istag keycloak:19.0 --from-image quay.io/keycloak/keycloak:19.0
+
+oc tag quay.io/keycloak/keycloak:20.0.3 keycloak:20.0
+
+oc describe is keycloak
+
+oc tag quay.io/keycloak/keycloak:20.0.3 keycloak:20.0 --scheduled
+
+oc tag quay.io/keycloak/keycloak:20.0.3 keycloak:20.0 --reference-policy local
+
+oc set image-lookup keycloak
+
+oc set image-lookup
+
+oc set image-lookup keycloak --enabled=false
+
+oc create deployment mykeycloak --image keycloak:20.0
+
+oc create job NAME --image IMAGE-STREAM-TAG -- COMMAND
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start updates-imagestreams
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project updates-imagestreams
+
+oc create is versioned-hello
+
+oc create istag versioned-hello:v1.0 --from-image registry.ocp4.example.com:8443/redhattraining/versioned-hello:v1.0
+
+oc set image-lookup versioned-hello
+
+oc set image-lookup
+
+oc describe is versioned-hello
+
+oc image info registry.ocp4.example.com:8443/redhattraining/versioned-hello:v1.0
+
+oc create deployment version --image versioned-hello:v1.0
+
+oc get pods
+
+oc get deployment -o wide
+
+oc get pod version-744bf7694b-bzhd2 -o jsonpath='{.spec.containers[0].image}{"\n"}'
+
+lab finish updates-imagestreams
+
+--------------------------------------------------------------------------------------------------------------
+
+oc get deployment mykeycloak -o wide
+
+oc set triggers deployment/mykeycloak --from-image keycloak:20 --containers keycloak
+
+oc get deployment mykeycloak -o jsonpath='{.metadata.annotations.image\.openshift\.io/triggers}' | jq .
+
+oc set triggers deployment/mykeycloak
+
+oc set triggers deployment/mykeycloak --manual --from-image keycloak:20 --containers keycloak
+
+oc set triggers deployment/mykeycloak --auto --from-image keycloak:20 --containers keycloak
+
+oc set triggers deployment/mykeycloak --remove-all
+
+oc create istag keycloak:20.0.2 --from-image quay.io/keycloak/keycloak:20.0.2
+
+oc import-image keycloak:20.0.2 --from quay.io/keycloak/keycloak:20.0.2 --confirm
+
+oc tag quay.io/keycloak/keycloak:20.0.2 keycloak:20.0.2
+
+oc tag --alias keycloak:20.0.2 keycloak:20
+
+oc describe is keycloak
+
+oc create istag keycloak:20.0.3 --from-image quay.io/keycloak/keycloak:20.0.3
+
+oc tag --alias keycloak:20.0.3 keycloak:20
+
+oc tag --alias keycloak:20.0.2 keycloak:20
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start updates-triggers
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project updates-triggers
+
+oc set image-lookup
+
+oc get istag
+
+oc get istag versioned-hello:1 -o jsonpath='{.tag.from.name}{"\n"}'
+
+oc get deployment -o wide
+
+/home/student/DO180/labs/updates-triggers/curl_loop.sh
+
+oc set triggers deployment/version --from-image versioned-hello:1 --containers versioned-hello
+
+oc get deployment version -o jsonpath='{.metadata.annotations.image\.openshift\.io/triggers}' | jq .
+
+oc tag registry.ocp4.example.com:8443/redhattraining/versioned-hello:1-125 \
+
+oc get deployment version -o wide
+
+oc describe is versioned-hello
+
+oc tag registry.ocp4.example.com:8443/redhattraining/versioned-hello@sha256:66e0...105e versioned-hello:1
+
+lab finish updates-triggers
+
+--------------------------------------------------------------------------------------------------------------
+
+https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch07s09/afc13612-c35a-47ee-be67-d71e1f05fb37
+
+--------------------------------------------------------------------------------------------------------------

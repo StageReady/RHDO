@@ -1,0 +1,292 @@
+CH6
+
+lab start reliability-ha
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project reliability-ha
+
+cd DO180/labs/reliability-ha
+
+cat long-load.yaml
+
+oc apply -f long-load.yaml
+
+oc exec long-load -- curl -s localhost:3000/health
+
+oc get pods
+
+oc exec long-load -- curl -s localhost:3000/destruct
+
+oc get pods
+
+oc delete pod long-load
+
+oc apply -f long-load.yaml
+
+oc exec long-load -- curl -s localhost:3000/health
+
+oc exec long-load -- curl -s localhost:3000/destruct
+
+oc get pods
+
+oc delete pod long-load
+
+oc apply -f long-load.yaml
+
+oc get pods
+
+oc exec long-load -- curl -s localhost:3000/health
+
+oc exec long-load -- curl -s localhost:3000/health
+
+cat long-load-deploy.yaml
+
+./load-test.sh
+
+oc apply -f ~/DO180/labs/reliability-ha/long-load-deploy.yaml
+
+curl long-load-reliability-ha.apps.ocp4.example.com/togglesick
+
+cd /home/student/
+
+lab finish reliability-ha
+
+--------------------------------------------------------------------------------------------------------------
+
+oc set probe deployment/front-end --readiness --failure-threshold 6 --period-seconds 10 --get-url http://:8080/healthz
+
+Workloads → Deployments menu and select a deployment.
+
+Click Actions and then click Add Health Checks.
+
+Click Edit probe to specify the readiness type, the HTTP headers, the path, the port, and more.
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start reliability-probes
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project reliability-probes
+
+oc apply -f ~/DO180/labs/reliability-probes/long-load-deploy.yaml
+
+oc exec deploy/long-load -- curl -s localhost:3000/health
+
+oc get pods
+
+oc scale deploy/long-load --replicas 0
+
+oc apply -f ~/DO180/labs/reliability-probes/long-load-deploy.yaml
+
+watch oc get pods
+
+~/DO180/labs/reliability-probes/load-test.sh
+
+oc exec deploy/long-load -- curl -s localhost:3000/togglesick
+
+oc scale deploy/long-load --replicas 0
+
+oc apply -f ~/DO180/labs/reliability-probes/long-load-deploy.yaml
+
+watch oc get pods
+
+oc exec deploy/long-load -- curl -s localhost:3000/togglesick
+
+oc get pods
+
+oc scale deploy/long-load --replicas 0
+
+oc set probe deploy/long-load --readiness --failure-threshold 1 --period-seconds 3 --get-url http://:3000/health
+
+oc scale deploy/long-load --replicas 3
+
+watch oc get pods
+
+oc exec deploy/long-load -- curl -s localhost:3000/hiccup?time=5
+
+lab finish reliability-probes
+
+--------------------------------------------------------------------------------------------------------------
+
+oc set resources deployment hello-world-nginx --requests cpu=10m,memory=1gi
+
+oc describe node master01
+
+oc adm top pods -n openshift-dns
+
+oc adm top node master01
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start reliability-requests
+
+oc login -u admin -p redhatocp https://api.ocp4.example.com:6443
+
+oc describe node master01
+
+oc project reliability-requests
+
+cd DO180/labs/reliability-requests
+
+oc apply -f long-load-deploy.yaml
+
+oc scale deploy/long-load --replicas 10
+
+oc get pods
+
+oc get events --field-selector reason="FailedScheduling"
+
+oc describe pod/long-load-86bb4b79f8-44zwd
+
+oc describe node master01
+
+oc set resources deploy/long-load --requests memory=250Mi
+
+oc delete pod -l app=long-load
+
+oc get pods
+
+oc describe node master01
+
+cd /home/student/
+
+lab finish reliability-requests
+
+--------------------------------------------------------------------------------------------------------------
+
+oc set resources deployment/hello --limits memory=1Gi
+
+oc get pod hello-67645f4865-vvr42 -o yaml
+
+To set a memory limit for the container in a pod from the web console, select a deployment, and click Actions → Edit resource limits.
+
+Set memory limits by increasing or decreasing the memory on the Limit section.
+
+oc set resources deployment/hello --limits cpu=200m
+
+To set a CPU limit for the container in a pod from the web console, select a deployment, and click Actions → Edit resource limits.
+
+Set CPU limits by increasing or decreasing the CPU on the Limit section.
+
+oc describe node master01
+
+oc adm top pods -n openshift-console
+
+To visualize the consumption of resources from the web console, select a deployment, and click the Metrics tab. From this tab, you can view the usage for memory, CPU, the file system, and incoming and outgoing traffic.
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start reliability-limits
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project reliability-limits
+
+oc apply -f ~/DO180/labs/reliability-limits/leakapp.yml
+
+oc get pods
+
+watch oc get pods
+
+oc get pods leakapp-99bb64c8d-hk26k -o jsonpath='{.status.containerStatuses[0].lastState}' | jq .
+
+watch oc get pods
+
+oc set resources deployment/leakapp --limits memory=600Mi
+
+oc get pods
+
+watch oc get pods
+
+oc adm top pods
+
+watch oc adm top pods
+
+watch oc get pods
+
+lab finish reliability-limits
+
+--------------------------------------------------------------------------------------------------------------
+
+oc autoscale deployment/hello --min 1 --max 10 --cpu-percent 80
+
+oc get hpa
+
+oc apply -f hello-hpa.yaml
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start reliability-autoscaling
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project reliability-autoscaling
+
+vim ~/DO180/labs/reliability-autoscaling/loadtest.yml
+
+oc apply -f ~/DO180/labs/reliability-autoscaling/loadtest.yml
+
+oc get pods
+
+oc autoscale deployment/loadtest --min 2 --max 20 --cpu-percent 50
+
+oc get hpa loadtest
+
+oc describe hpa loadtest
+
+oc delete hpa loadtest
+
+oc delete -f ~/DO180/labs/reliability-autoscaling/loadtest.yml
+
+vim ~/DO180/labs/reliability-autoscaling/loadtest.yml
+
+        spec:
+          containers:
+          - image: registry.ocp4.example.com:8443/redhattraining/loadtest:v1.0
+            name: loadtest
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /api/loadtest/v1/healthz
+                port: 8080
+                scheme: HTTP
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 1
+            resources:
+              requests:
+                cpu: 25m
+              limits:
+                cpu: 100m
+
+oc apply -f ~/DO180/labs/reliability-autoscaling/loadtest.yml
+
+oc get pods
+
+oc scale deployment/loadtest --replicas 5
+
+oc get pods
+
+oc scale deployment/loadtest --replicas 1
+
+oc get pods
+
+oc autoscale deployment/loadtest --min 2 --max 20 --cpu-percent 50
+
+watch oc get hpa loadtest
+
+oc get route loadtest
+
+curl loadtest-reliability-autoscaling.apps.ocp4.example.com/api/loadtest/v1/cpu/1
+
+oc get hpa loadtest x3
+
+lab finish reliability-autoscaling
+
+--------------------------------------------------------------------------------------------------------------
+
+https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch06s11/afc13612-c35a-47ee-be67-d71e1f05fb37
+
+--------------------------------------------------------------------------------------------------------------

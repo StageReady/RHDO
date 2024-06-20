@@ -1,0 +1,467 @@
+CH5
+
+oc create secret generic secret_name --from-literal key1=secret1 --from-literal key2=secret2
+
+kubectl create secret generic ssh-keys --from-file id_rsa=/path-to/id_rsa --from-file id_rsa.pub=/path-to/id_rsa.pub
+
+oc create secret tls secret-tls --cert /path-to-certificate --key /path-to-key
+
+Workloads → Secrets menu. Click Create and select Key/value secret. Complete the form with the key name, and specify the value by writing it in the following section, or by extracting it from a file.
+
+Workloads → Secrets menu. Click Create and select Image pull secret. Complete the form or upload a configuration file with the secret name, select the authentication type, and add the registry server address, the username, password, and email credentials.
+
+kubectl create configmap my-config --from-literal key1=config1 --from-literal key2=config2
+
+kubectl create configmap my-config --from-literal key1=config1 --from-literal key2=config2
+
+Workloads → ConfigMaps menu. Click Create ConfigMap and complete the configuration map by using the form view or the YAML view.
+
+oc create secret generic demo-secret --from-literal user=demo-user --from-literal root_password=zT1KTgk
+
+oc create secret generic demo-secret --from-file user=/tmp/demo/user --from-file root_password=/tmp/demo/root_password
+
+oc set volume deployment/demo --add --type secret --secret-name demo-secret --mount-path /app-secrets
+
+Workloads → Secrets to list the available secrets menu.
+Select a secret and click Add Secret to workload.
+Select the workload, choose the Volume option, and define the mount path for the secret.
+
+oc create configmap demo-map --from-file=config-files/httpd.conf
+
+oc set volume deployment/demo --add --type configmap --configmap-name demo-map --mount-path /app-secrets
+
+oc set volume deployment/demo
+
+oc set env deployment/demo --from secret/demo-secret --prefix MYSQL_
+
+oc extract secret/demo-secrets -n demo --to /tmp/demo --confirm
+
+ls /tmp/demo/
+
+cat /tmp/demo/root_password
+
+echo k8qhcw3m0 > /tmp/demo/root_password
+
+oc set data secret/demo-secrets -n demo --from-file /tmp/demo/root_password
+
+kubectl delete secret/demo-secrets -n demo
+
+oc delete configmap/demo-map -n demo
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start storage-configs
+
+WEB:
+
+Create a web application deployment named webconfig from the web console. Use the registry.ocp4.example.com:8443/rhscl/httpd-24-rhel7:latest container image.
+Log in to the OpenShift cluster as the developer user with the developer password by using the OpenShift web console https://console-openshift-console.apps.ocp4.example.com URL.
+Change to the Administrator perspective, and change to the storage-configs project. Select the Workloads → Deployments option and click the Create Deployments button. Add the webconfig deployment name and the image name, and leave the default for the other values.
+
+Select the Create button. Verify the successful deployment of three pods.
+Expose the web application to external access from the web console. Use the following information to create a service and a route for the web application, and leave the hostname and path fields blank.
+
+Service field		Service value
+Service name		webconfig-svc
+App selector		webconfig
+Port number			8080
+Target port			8080
+Route field			Route value
+Route name			webconfig-rt
+Service name		webconfig-svc
+Target port			8080
+
+Select the Networking → Services option and click the Create Service button to create the webconfig-svc service that exposes the webconfig deployment. Verify the status of the service.
+Select the Networking → Routes option and click the Create Route button to create the webconfig-rt service that exposes the webconfig-svc service.
+Use a web browser to navigate to the http://webconfig-rt-storage-configs.apps.ocp4.example.com route. A testing page is displayed by default because of the missing files.
+
+Select the Workloads → ConfigMaps option and click the Create ConfigMap button to create the webfiles configuration map by using the redhatlogo.png file and the index.html file in the /home/DO180/labs/storage-configs directory, 
+and verify the creation of the configuration map. Add a Data key, define the index.html name as the Key value, and open the /home/DO180/labs/storage-configs/index.html file.
+
+Add a Binary Data key, define the redhatlogo.png name as the Key value, and open the /home/DO180/labs/storage-configs/redhatlogo.png file.
+
+Log in to the OpenShift cluster from the command line, and mount the webfiles configuration map as a volume in the webconfig deployment from the command line.
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc set volume deployment/webconfig --add --type configmap --configmap-name webfiles --name webfiles-vol --mount-path /var/www/html/
+
+oc status
+
+oc get pods
+
+Return to the web browser, and navigate to the webconfig-rt-storage-configs.apps.ocp4.example.com route. Click the Click me! link to open the file.
+
+lab finish storage-configs
+
+--------------------------------------------------------------------------------------------------------------
+
+Persistent Volumes
+
+configMap
+The configMap volume externalizes the application configuration data. This use of the configMap resource ensures that the application configuration is portable across environments and can be version-controlled.
+
+emptyDir
+An emptyDir volume provides a per-pod directory for scratch data. The directory is usually empty after provisioning. emptyDir volumes are often required for ephemeral storage.
+
+hostPath
+A hostPath volume mounts a file or directory from the host node into your pod. To use a hostPath volume, the cluster administrator must configure pods to run as privileged. This configuration grants access to other pods in the same node.
+Red Hat does not recommend the use of hostPath volumes in production. Instead, Red Hat supports hostPath mounting for development and testing on a single-node cluster. Although most pods do not need a hostPath volume, it does offer a quick option for testing if an application requires it.
+
+iSCSI
+Internet Small Computer System Interface (iSCSI) is an IP-based standard that provides block-level access to storage devices. With iSCSI volumes, Kubernetes workloads can consume persistent storage from iSCSI targets.
+
+local
+You can use Local persistent volumes to access local storage devices, such as a disk or partition, by using the standard PVC interface. Local volumes are subject to the availability of the underlying node, and are not suitable for all applications.
+
+NFS
+An NFS (Network File System) volume can be accessed from multiple pods at the same time, and thus provides shared data between pods. The NFS volume type is commonly used because of its ability to share data safely. Red Hat recommends to use NFS only for non-production systems.
+
+ReadWriteOnce 	RWO		A single node mounts the volume as read/write.
+ReadOnlyMany 	ROX		Many nodes mount the volume as read-only.
+ReadWriteMany 	RWX		Many nodes mount the volume as read/write.
+
+Volume type		RWO		ROX		RWX
+configMap		Yes		No		No
+emptyDir		Yes		No		No
+hostPath		Yes		No		No
+iSCSI			Yes		Yes		No
+local			Yes		No		No
+NFS				Yes		Yes		Yes
+
+Volume Modes
+
+Kubernetes supports two volume modes for persistent volumes: Filesystem and Block. If the volume mode is not defined for a volume, then Kubernetes assigns the default volume mode, Filesystem, to the volume.
+
+OpenShift Container Platform can provision raw block volumes.
+
+Volume plug-in	Manually provisioned	Dynamically provisioned
+AWS EBS			Yes						Yes
+Azure disk		Yes						Yes
+Cinder			Yes						Yes
+Fibre channel	Yes						No
+GCP				Yes						Yes
+iSCSI			Yes						No
+local			Yes						No
+RHOC Data Foundation	Yes				Yes
+VMware vSphere	Yes						Yes
+
+oc create -f my-fc-volume.yaml
+
+oc set volumes deployment/example-application --add --name example-pv-storage --type persistentVolumeClaim --claim-mode rwo --claim-size 15Gi --mount-path /var/lib/example-app --claim-name example-pv-claim
+
+oc create -f pvc_file_name.yaml
+
+oc get pvc
+
+Storage → PersistentVolumesClaims menu.
+Click Create PersistentVolumeClaim and complete the form by adding the name, the storage class, the size, the access mode, and the volume mode.
+
+oc get storageclass
+
+oc set volumes deployment/example-application --add --name example-pv-storage --type pvc --claim-class nfs-storage --claim-mode rwo --claim-size 15Gi --mount-path /var/lib/example-app --claim-name example-pv-claim
+
+PV and PVC Lifecycles
+
+Available
+After a PV is created, it becomes available for any PVC to use in the cluster in any namespace.
+
+Bound
+A PV that is bound to a PVC is also bound to the same namespace as the PVC, and no other PVC can use it.
+
+In Use
+You can delete a PVC if no pods actively use it. The Storage Object in Use Protection feature prevents the removal of bound PVs and PVCs that pods are actively using. Such removal can result in data loss. Storage Object in Use Protection is enabled by default.
+If a user deletes a PVC that a pod actively uses, then the PVC is not removed immediately. PVC removal is postponed until no pods actively use the PVC. Also, if a cluster administrator deletes a PV that is bound to a PVC, then the PV is not removed immediately. PV removal is postponed until the PV is no longer bound to a PVC.
+
+Released
+After the developer deletes the PVC that is bound to a PV, the PV is released, and the storage that the PV used can be reclaimed.
+
+Reclaimed
+The reclaim policy of a persistent volume tells the cluster what to do with the volume after it is released. A volume's reclaim policy can be Retain or Delete.
+
+Policy		Description
+Retain		Enables manual reclamation of the resource for those volume plug-ins that support it.
+Delete		Deletes both the PersistentVolume object from OpenShift Container Platform and the associated storage asset in external infrastructure.
+
+oc delete pvc/example-pvc-storage
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start storage-volumes
+
+Log in to the OpenShift cluster as the developer user with the developer password. Select the storage-volumes project.
+Use a web browser to navigate to the OpenShift web console at https://console-openshift-console.apps.ocp4.example.com.
+Log in by using Red Hat Identity Management with the developer username and the developer password.
+Select the Administrator view to access the administrative menu.
+On the Home → Projects page, select the storage-volumes project.
+
+Select the Storage → StorageClasses menu option.
+
+Use the registry.ocp4.example.com:8443/rhel8/mysql-80 container image to create a MySQL deployment named db-pod. Use the storage-volumes project. Add a service for the database.
+Select the Workloads → Deployments menu option.
+Verify that the storage-volumes project is active and select the Create Deployment button.
+Use db-pod for the deployment name and change the image name to registry.ocp4.example.com:8443/rhel8/mysql-80.
+Add the environment variables.
+
+Name			Value
+MYSQL_USER		user1
+MYSQL_PASSWORD	mypa55w0rd
+MYSQL_DATABASE	items
+
+Select the Advanced options → Scaling link and set the replicas to one.
+Click Create. Wait for the blue circle to indicate that a single pod is running.
+Click Networking → Services → Create Service.
+Add the service values.
+
+Name		db-pod
+selector	app=db-pod
+Port		3306
+Target port	3306
+
+Click the Create button.
+
+Add a 1 Gi, RWO PVC named db-pod-pvc to the deployment. Set the /var/lib/mysql directory as the mount path.
+Select the Workloads → Deployments menu item.
+Click the three vertical dots in the row with the db-pod deployment, and select the Add storage menu option.
+In the Add Storage form, click Create new claim.
+Add the following field values to the form.
+
+Field name					Value
+PersistentVolumeClaim name	db-pod-pvc
+Access mode					RWO
+Size						1 GiB
+Volume mode					Filesystem
+Mount path					/var/lib/mysql
+
+Click Save.
+Scroll down in the deployment details to the Volumes section.
+Select the db-pod-pvc link to see the PVC details.
+
+Select the Workloads → Deployments → dp-pod → YAML tab.
+Observe the volumes and volumeMounts additions to the deployment.
+
+cat ~/DO180/labs/storage-volumes/configmap/init-db.sql
+
+DROP TABLE IF EXISTS `Item`;
+ CREATE TABLE `Item` (`id` BIGINT not null auto_increment primary key, `description` VARCHAR(100), `done` BIT);
+ INSERT INTO `Item` (`id`,`description`,`done`) VALUES (1,'Pick up newspaper', 0);
+ INSERT INTO `Item` (`id`,`description`,`done`) VALUES (2,'Buy groceries', 1);
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project storage-volumes
+
+oc create configmap init-db-cm --from-file=/home/student/DO180/labs/storage-volumes/configmap/init-db.sql
+
+oc set volumes deployment/db-pod --add --name init-db-volume --type configmap --configmap-name init-db-cm --mount-path /var/db/config
+
+oc rsh deployment/db-pod
+
+mysql -uuser1 -pmypa55w0rd items </var/db/config/init-db.sql
+
+mysql -uuser1 -pmypa55w0rd items -e 'select * from Item;'
+
+exit
+
+oc delete deployment/db-pod
+
+oc get pvc
+
+oc create deployment db-pod --port 3306 --image=registry.ocp4.example.com:8443/rhel8/mysql-80
+
+oc set env deployment/db-pod MYSQL_USER=user1 MYSQL_PASSWORD=mypa55w0rd MYSQL_DATABASE=items
+
+oc set volumes deployment/db-pod --add --type pvc --mount-path /var/lib/mysql --name db-pod-vol --claim-name db-pod-pvc
+
+oc run query-db -it --rm --image registry.ocp4.example.com:8443/redhattraining/do180-dbinit --restart Never -- /bin/bash -c "mysql -uuser1 -pmypa55w0rd --protocol tcp -h db-pod -P3306 items -e 'select * from Item;'"
+
+oc delete deployment/db-pod
+
+oc delete pvc/db-pod-pvc
+
+lab finish storage-volumes
+
+--------------------------------------------------------------------------------------------------------------
+
+oc delete pv <pv-name>
+
+oc create -f <storage-class-filename.yaml>
+
+oc get storageclass
+
+oc describe storageclass lvms-vg1
+
+oc create -f <my-pvc-filename.yaml>
+
+oc set volume deployment/<deployment-name> --add --name <my-volume-name> --claim-name my-block-pvc --mount-path /var/tmp
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start storage-classes
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project storage-classes
+
+oc get sc
+
+oc describe sc lvms-vg1
+
+oc create deployment db-pod --port 3306 --image registry.ocp4.example.com:8443/rhel8/mysql-80
+
+oc set env deployment/db-pod MYSQL_USER=user1 MYSQL_PASSWORD=mypa55w0rd MYSQL_DATABASE=items
+
+oc get pods
+
+oc set volumes deployment/db-pod --add --name odf-lvm-storage --type pvc --claim-mode rwo --claim-size 1Gi --mount-path /var/lib/mysql --claim-class lvms-vg1 --claim-name db-pod-odf-pvc
+
+oc get pvc
+
+oc describe pvc db-pod-odf-pvc
+
+oc run query-db -it --rm --image registry.ocp4.example.com:8443/rhel8/mysql-80 --restart Never --command -- /bin/bash -c "mysql -uuser1 -pmypa55w0rd --protocol tcp -h db-pod -P3306 items -e 'show databases;'"
+
+oc delete all -l app=db-pod
+
+oc get pvc
+
+oc delete pvc db-pod-odf-pvc
+
+oc create -f nfs-pvc.yaml
+
+oc describe pvc nfs-pvc
+
+oc create deployment web-pod --port 8080 --image registry.ocp4.example.com:8443/ubi8/httpd-24:1-215
+
+oc expose deployment web-pod
+
+oc expose svc web-pod --hostname web-pod.apps.ocp4.example.com
+
+oc get routes
+
+curl http://web-pod.apps.ocp4.example.com/
+
+oc set volumes deployment/web-pod --add --name nfs-volume --claim-name nfs-pvc --mount-path /var/www/html
+
+oc create deployment app-pod --port 9090 --image registry.ocp4.example.com:8443/redhattraining/do180-roster
+
+oc expose deployment app-pod
+
+oc expose svc app-pod --hostname app-pod.apps.ocp4.example.com
+
+oc set volumes deployment/app-pod --add --name nfs-volume --claim-name nfs-pvc --mount-path /var/tmp
+
+Open a web browser to the http://app-pod.apps.ocp4.example.com/ page
+In the form, enter your information and then click save. The application adds your information to the list after the form.
+Click push to create the /var/tmp/People.html file on the shared volume.
+Open another tab on the browser and navigate to the http://web-pod.apps.ocp4.example.com/People.html page. The web-pod application displays the People.html file from the shared volume.
+
+lab finish storage-classes
+
+--------------------------------------------------------------------------------------------------------------
+
+oc create -f statefulset-dbserver.yml
+
+kubectl get statefulset
+
+oc get pods
+
+kubectl get pvc
+
+oc describe pod dbserver-0
+oc describe pod dbserver-1
+oc describe pod dbserver-2
+
+oc scale statefulset/dbserver --replicas 1
+
+kubectl delete statefulset dbserver
+
+oc get pvc
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start storage-statefulsets
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc project storage-statefulsets
+
+oc create deployment web-server --image registry.ocp4.example.com:8443/redhattraining/hello-world-nginx:latest
+
+oc get pods -l app=web-server
+
+Field		Value
+Name		web-pv
+Type		persistentVolumeClaim
+Claim mode	rwo
+Claim size	5Gi
+Mount path	/usr/share/nginx/html
+Claim name	web-pv-claim
+
+oc set volumes deployment/web-server --add --name web-pv --type persistentVolumeClaim --claim-mode rwo --claim-size 5Gi --mount-path /usr/share/nginx/html --claim-name web-pv-claim
+
+oc get pods -l app=web-server
+
+oc get pvc
+
+oc get pods
+
+oc exec -it pod/web-server-64689877c6-mdr6f -- /bin/bash -c 'echo "Hello, World from ${HOSTNAME}" > /usr/share/nginx/html/index.html'
+
+oc exec -it pod/web-server-64689877c6-mdr6f -- cat /usr/share/nginx/html/index.html
+
+oc scale deployment web-server --replicas 2
+
+oc get pods
+
+oc exec -it pod/web-server-64689877c6-mbj6g -- cat /usr/share/nginx/html/index.html
+
+oc exec -it pod/web-server-64689877c6-mdr6f -- cat /usr/share/nginx/html/index.html
+
+Create a database server with a stateful set by using the statefulset-db.yml file in the /home/student/DO180/labs/storage-statefulsets directory. Update the file with the following information:
+
+Field													Value
+metadata.name 											dbserver
+spec.selector.matchLabels.app 							database
+spec.template.metadata.labels.app 						database
+spec.template.spec.containers.name 						dbserver
+spec.template.spec.containers.volumeMounts.name 		data
+spec.template.spec.containers.volumeMounts.mountPath 	/var/lib/mysql
+spec.volumeClaimTemplates.metadata.name 				data
+spec.volumeClaimTemplates.spec.storageClassName 		lvms-vg1
+
+oc create -f /home/student/DO180/labs/storage-statefulsets/statefulset-db.yml
+
+oc get statefulset
+
+oc get pods -l app=database
+
+oc exec -it pod/dbserver-0 -- /bin/bash -c "mysql -uredhat -predhat123 sakila -e 'create table items (count INT);'"
+
+oc exec -it pod/dbserver-1 -- /bin/bash -c "mysql -uredhat -predhat123 sakila -e 'create table inventory (count INT);'"
+
+oc get pvc -l app=database
+
+oc get pod dbserver-0 -o json | jq .spec.volumes[0].persistentVolumeClaim.claimName
+
+oc get pod dbserver-1 -o json | jq .spec.volumes[0].persistentVolumeClaim.claimName
+
+oc exec -it pod/dbserver-0 -- /bin/bash -c "mysql -uredhat -predhat123 sakila -e 'show tables;'"
+
+oc exec -it pod/dbserver-1 -- /bin/bash -c "mysql -uredhat -predhat123 sakila -e 'show tables;'"
+
+oc delete pod dbserver-0
+
+oc get pods -l app=database
+
+oc get pvc -l app=database
+
+oc exec -it pod/dbserver-0 -- /bin/bash -c "mysql -uredhat -predhat123 sakila -e 'show tables;'"
+
+lab finish storage-statefulsets
+
+--------------------------------------------------------------------------------------------------------------
+
+https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch05s09/afc13612-c35a-47ee-be67-d71e1f05fb37
+
+--------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,147 @@
+CH1:
+
+CLI:
+
+lab start intro-navigate
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc whoami --show-console
+
+Use a browser to access webpage.
+
+Home → Overview page, which provides a quick glimpse of initial cluster configurations, documentation, and general cluster status.
+Home → Projects to list all projects in the cluster that are available to the credentials in use.
+Operators → OperatorHub page, which provides access to the collection of operators that are available for your cluster.
+
+By adding OPERATORS to the cluster, you can extend the features and functions that your OpenShift cluster provides. 
+Use the SEARCH filter to find the available operators to enhance the cluster and to supply the OpenShift aspects that you require.
+Click on the LINK on the Operator Hub page, you can peruse the Developer Catalog.
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start intro-navigate
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+oc login -u admin -p redhatocp https://api.ocp4.example.com:6443
+
+oc whoami --show-console
+
+From the Getting Started section in the +Add page, click Create a new project to open the Create Project wizard.
+Create a project named intro-navigate by using the wizard. Use intro-navigate for the display name, and add a brief description of the project.
+
+Click Topology to view the project.
+Select the Start building your application link to browse the available sample applications.
+
+Enter Apache into the search bar to see the available sample applications for deployment.
+Select the samples option from Httpd from the list of available applications, and then click Create from the side panel.
+
+Select the httpd-sample deployment to view the details of the application.
+
+Switch into the Administrator perspective and inspect the deployment.
+
+Select the intro-navigate project to open the Project Details page. This page includes a general overview of the project, such as the project status and resource usage details.
+
+Workloads → Pods to view the httpd-sample pods.
+Workloads → Deployments to view the list of deployments in the project.
+
+Click httpd-sample to view the deployment details.
+
+Networking → Services and click httpd-sample to view the details of the httpd-sample service.
+Networking → Route and click httpd-sample to view the details of the httpd-sample route.
+
+Home → Projects. Select Delete Project from the context menu for the intro-navigate project.
+Enter the project name in the text field and then select Delete.
+
+From the OpenShift web console right panel, click developer and then select Log out from the account menu.
+
+Log in to the web console. Select Red Hat Identity Management and then ENTER the admin USERNAME and the redhatocp PASSWORD.
+
+Operators → Installed Operators. Each operator provides a specific function for the cluster. Select an individual operator to display its details.
+Workloads → Pods to view the list of all pods in the cluster. The search bar at the top can narrow down the list of pods. Select an individual pod to display its details.
+Workloads → Deployments to view the list of all deployments in the cluster. Select an individual deployment to display its details.
+Networking → Services to view the list of all services in the cluster. Select an individual service to display its details.
+
+Log out
+
+CLI:
+lab finish intro-navigate
+
+--------------------------------------------------------------------------------------------------------------
+
+Compute → Nodes to view the list of all nodes in the cluster.
+
+Click a node's name to navigate to the overview page for the node.
+View the node logs or connect to the node by using the terminal.
+
+Workloads → Pods page to view the list of all pods in the cluster.
+
+You can filter and order pods by project and by other fields. To view the pod details page, click a pod name in the list.
+
+Pods → Logs the logs are available on the Logs page and provide information about the pod status.
+Pods → Terminal page opens a shell connection to the pod for inspection and issue remediation.
+
+Observe → Metrics to visualize gathered metrics by using a Grafana-based data query utility.
+Observe → Alerting to view firing alerts, and filter on the alert severity to view those alerts that need remediation.
+
+Home → Events page shows the events for all projects or for a specific project. 
+Home → API Explorer, you can view and explore the details for resources. Such details include the description, schema, and other metadata for the resource.
+
+--------------------------------------------------------------------------------------------------------------
+
+lab start intro-monitor
+
+oc login -u developer -p developer https://api.ocp4.example.com:6443
+
+oc whoami --show-console
+
+Open a web browser and navigate to https://console-openshift-console.apps.ocp4.example.com
+
+Review the Cluster Overview page.
+
+Scroll down to view the Status section, which provides a summary of cluster performance and health.
+
+Continue scrolling to view the Cluster utilization section, which contains metrics and graphs that show resource consumption.
+
+Continue scrolling to view the Details section, including information such as the cluster API address, cluster ID, and Red Hat OpenShift version.
+
+Scroll to the Cluster Inventory section, which contains links to the Nodes, Pods, StorageClasses, and PersistentVolumeClaim pages.
+
+The last part of the page contains the Activity section, which lists ongoing activities and recent events for the cluster.
+
+Compute → Nodes to view the machine that provides the cluster resources.
+
+Click the master01 link to view the details of the cluster node.
+Click the Terminal tab to connect to a shell on the master01 node.
+With the interactive shell on this page, you can run commands directly on the cluster node.
+Run the chroot /host command to enable host binaries on the node.
+
+systemctl status kubelet
+systemctl status crio
+
+ctrl+d
+
+Observe → Alerting to view cluster alert information.
+
+Select the Alerting rules tab to view the various alert definitions.
+Filter the alerting rules by name and search for the storageClasses term.
+Select the Warning alert that is labeled MultipleDefaultStorageClasses to view the details of the alerting rule. Inspect the Description and Expression definition for the rule.
+
+Observe → Metrics to open the cluster metrics utility.
+
+Click Insert example query to populate the metrics graph with sample data.
+From the graph, hover over any point on the timeline to view the detailed data points.
+
+Home → Events to open the cluster events log.
+
+From the Resources drop-down, use the search bar to filter for the pod term, and select the box labeled Pod to display events that relate to that resource.
+Continue to refine the filter by selecting Normal from the types drop-down.
+Filter the results by using the Message text field. Enter the started container text to retrieve the matching events.
+
+lab finish intro-monitor
+
+--------------------------------------------------------------------------------------------------------------
+
+https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch01s10/afc13612-c35a-47ee-be67-d71e1f05fb37
+
+--------------------------------------------------------------------------------------------------------------
