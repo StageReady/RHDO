@@ -391,3 +391,39 @@ lab finish deploy-routes
 https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch04s09/afc13612-c35a-47ee-be67-d71e1f05fb37
 
 --------------------------------------------------------------------------------------------------------------
+
+Create a MySQL database deployment named mysql-app by using the registry.ocp4.example.com:8443/redhattraining/mysql-app:v1 image, and identify the root cause of the failure.:
+
+oc create deployment mysql-app --image registry.ocp4.example.com:8443/redhattraining/mysql-app:v1
+
+oc logs mysql-app-75dfd58f99-5xfqc
+
+Configure the environment variables for the mysql-app deployment by using the following information:
+
+oc set env deployment/mysql-app MYSQL_USER=redhat MYSQL_PASSWORD=redhat123 MYSQL_DATABASE=world_x
+
+oc exec -it mysql-app-57c44f646-5qt2k -- /bin/bash -c "mysql -uredhat -predhat123 </tmp/world_x.sql"
+
+oc rsh mysql-app-57c44f646-5qt2k
+
+mysql -uredhat -predhat123 world_x
+
+Create a service for the mysql-app deployment by using the following information:
+
+oc expose deployment mysql-app --name mysql-service --port 3306 --target-port 3306
+
+Create a web application deployment named php-app by using the registry.ocp4.example.com:8443/redhattraining/php-webapp:v1 image.:
+
+oc create deployment php-app --image registry.ocp4.example.com:8443/redhattraining/php-webapp:v1
+
+Create a service for the php-app deployment by using the following information:
+
+oc expose deployment php-app --name php-svc --port 8080 --target-port 8080
+
+oc expose service/php-svc --name phpapp
+
+oc get routes
+
+Test the connectivity between the web application and the MySQL database. In a web browser, navigate to the phpapp-database-applications.apps.ocp4.example.com route, and verify that the application retrieves data from the MySQL database.:
+
+Navigate to the phpapp-database-applications.apps.ocp4.example.com route in the web browser.

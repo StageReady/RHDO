@@ -465,3 +465,57 @@ lab finish storage-statefulsets
 https://rha.ole.redhat.com/rha/app/courses/do180-4.14/pages/ch05s09/afc13612-c35a-47ee-be67-d71e1f05fb37
 
 --------------------------------------------------------------------------------------------------------------
+
+Create a database server deployment named dbserver by using the registry.ocp4.example.com:8443/redhattraining/mysql-app:v1 container image. Then, set the missing environment variables by using the world-cred secret.:
+
+oc create deployment dbserver --image registry.ocp4.example.com:8443/redhattraining/mysql-app:v1
+
+oc set env deployment/dbserver --from secret/world-cred --prefix MYSQL_
+
+Add a volume to the dbserver deployment by using the following information::
+
+oc set volume deployment/dbserver --add --name dbserver-lvm --type persistentVolumeClaim --claim-mode rwo --claim-size 1Gi --mount-path /var/lib/mysql --claim-class lvms-vg1 --claim-name dbserver-lvm-pvc
+
+Create a service for the dbserver deployment by using the following information::
+
+oc expose deployment dbserver --name mysql-service --port 3306 --target-port 3306
+
+Create a web application deployment named file-sharing by using the registry.ocp4.example.com:8443/redhattraining/php-webapp-mysql:v1 container image. Scale the deployment to two replicas. Then, expose the deployment by using the following information:
+
+oc create deployment file-sharing --image registry.ocp4.example.com:8443/redhattraining/php-webapp-mysql:v1
+
+oc scale deployment file-sharing --replicas 2
+
+oc expose deployment file-sharing --name file-sharing --port 8080 --target-port 8080
+
+oc expose service/file-sharing
+
+Mount the dbfiles configuration map to the file-sharing deployment as a volume named config-map-pvc. Set the mount path to the /home/database-files directory. Then, verify the content of the insertdata.sql file.:
+
+oc set volume deployment/file-sharing --add --name config-map-pvc --type configmap --configmap-name dbfiles --mount-path /home/database-files
+
+oc exec -it pod/file-sharing-7f77855b7f-949lg -- head /home/database-files/insertdata.sql
+
+Add a shared volume to the file-sharing deployment. Use the following information to create the volume:
+
+oc set volume deployment/file-sharing --add --name shared-volume --type persistentVolumeClaim --claim-mode rwo --claim-size 1Gi --mount-path /home/sharedfiles --claim-class nfs-storage --claim-name shared-pvc
+
+oc exec -it pod/file-sharing-65884f75bb-92fxf -- cp /home/database-files/insertdata.sql /home/sharedfiles/
+
+oc set volume deployment/file-sharing --remove --name=config-map-pvc
+
+Add the shared-volume PVC to the dbserver deployment. Then, connect to a dbserver deployment pod and verify the content of the /home/sharedfiles/insertdata.sql file.:
+
+oc set volume deployment/dbserver --add --name shared-volume --claim-name shared-pvc --mount-path /home/sharedfiles
+
+oc exec -it pod/dbserver-6676fbf5fc-n9hpk -- head /home/sharedfiles/insertdata.sql
+
+Connect to the database server and execute the /home/sharedfiles/insertdata.sql file to add data to the world_x database. You can execute the file by using the following command:
+
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD world_x </home/sharedfiles/insertdata.sql
+
+oc rsh dbserver-6676fbf5fc-n9hpk
+
+mysql -u$MYSQL_USER -p$MYSQL_PASSWORD world_x </home/sharedfiles/insertdata.sql
+
+Test the connectivity between the web application and the database server. In a web browser, navigate to http://file-sharing-storage-review.apps.ocp4.example.com, and verify that the application retrieves data from the world_x database.
